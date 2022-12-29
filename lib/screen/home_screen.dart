@@ -1,3 +1,4 @@
+import 'package:chetingapp/screen/chat_screen.dart';
 import 'package:chetingapp/screen/message_Screen.dart';
 import 'package:chetingapp/widget/user_list.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -328,6 +329,58 @@ class _HomeScreenState extends State<HomeScreen> {
                   fontWeight: FontWeight.w600,
                   color: Colors.black54),),
             ),
+
+          StreamBuilder<QuerySnapshot>(
+            stream: FirebaseFirestore.instance.collection("user").snapshots(),
+            builder: (context,snapshot){
+              if(!snapshot.hasData){
+                return Center(
+                  child: CircularProgressIndicator(),
+                );
+
+              }else{
+
+                return ListView.builder(
+                  shrinkWrap: true,
+                  primary: false,
+                  itemCount: snapshot.data!.docs.length,
+                  itemBuilder: (context,index){
+                    QueryDocumentSnapshot documentdata = snapshot.data!.docs[index];
+                    return   Padding(
+                      padding: const EdgeInsets.only(left: 10,right: 10,top: 10),
+                      child: Container(
+                        decoration: BoxDecoration(
+                            color: Colors.white60.withOpacity(0.15),
+                            borderRadius: BorderRadius.circular(10)
+                        ),
+                        child:ListTile(
+                          onTap: (){
+                            Get.to(ChatScreen(
+                              userName: documentdata["name"],
+                              userEmail: documentdata["email"],
+                              userUid: documentdata["uid"],
+                              userPhoto: documentdata["photo"],
+                            ));
+                          },
+                          leading:CircleAvatar(
+                            backgroundImage: NetworkImage("${documentdata["photo"]}"),
+                            maxRadius: 22,
+                            minRadius: 10,
+                          ),
+                          title: Text("${documentdata["name"]}",style: TextStyle(fontSize: 14,
+                              fontWeight:FontWeight.bold,
+                              color: Colors.black54),),
+                          subtitle: Text("hello... ",style: TextStyle(fontSize: 12,
+                              fontWeight:FontWeight.bold,
+                              color: Colors.black54),),),
+                      ),
+                    );
+                  },
+                );
+
+              }
+            },
+          ),
 
           // StreamBuilder<QuerySnapshot>(
           //   stream: FirebaseFirestore.instance.collection("user").snapshots(),
