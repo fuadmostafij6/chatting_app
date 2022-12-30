@@ -3,7 +3,7 @@ import 'package:chetingapp/model/message_mdel.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-
+import 'package:emoji_picker_flutter/emoji_picker_flutter.dart';
 class ChatScreen extends StatefulWidget {
   final String? userName;
   final String? userEmail;
@@ -67,6 +67,8 @@ class _ChatScreenState extends State<ChatScreen> {
     setState(() {});
   }
 
+  bool emojiOn= false;
+
   @override
   void initState() {
     getUid().then((value) {
@@ -110,8 +112,7 @@ class _ChatScreenState extends State<ChatScreen> {
       ),
       body: Column(
         children: [
-          Expanded(
-              child: StreamBuilder(
+          Expanded(child: StreamBuilder(
             stream: FirebaseFirestore.instance
                 .collection('messages')
                 .doc(
@@ -120,9 +121,14 @@ class _ChatScreenState extends State<ChatScreen> {
                 .collection(widget.userUid!)
                 .snapshots(),
             builder: (context, snapshot) {
-              return ListView.builder(
+
+
+              return snapshot.hasData?
+              snapshot.data!.docs.isNotEmpty?
+              ListView.builder(
                 shrinkWrap: true,
                 primary: false,
+                reverse: true,
                 itemCount: snapshot.data!.docs.length,
                 itemBuilder: (context, index) {
                   QueryDocumentSnapshot documentdata =
@@ -147,26 +153,62 @@ class _ChatScreenState extends State<ChatScreen> {
                     ],
                   );
                 },
-              );
+              ):
+
+                  Center(child: Text("No Massage")):
+
+              Center(child: CircularProgressIndicator());
             },
           )),
           Padding(
             padding: const EdgeInsets.all(18.0),
             child: Row(
               children: [
+
+                InkWell(
+                  onTap: () {
+                    FocusScope.of(context).unfocus();
+                    setState(() {
+                      emojiOn = !emojiOn;
+                    });
+                  },
+                  child: Container(
+                    padding: EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Color(0XFF6A62B7),
+                    ),
+                    child: Icon(
+                      Icons.emoji_emotions,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+                SizedBox(
+                  width: 5,
+                ),
                 Expanded(
                   child: TextField(
+                    onTap: (){
+                      setState(() {
+                        emojiOn = false;
+                      });
+                    },
                     controller: _messageController,
                     decoration: InputDecoration(
                         hintText: "Send message", border: OutlineInputBorder()),
                   ),
                 ),
                 SizedBox(
-                  width: 10,
+                  width: 5,
                 ),
                 InkWell(
                   onTap: () {
                     sendMessage();
+
+                    setState(() {
+                      emojiOn =false;
+                    });
                   },
                   child: Container(
                     padding: EdgeInsets.all(14),
@@ -182,7 +224,52 @@ class _ChatScreenState extends State<ChatScreen> {
                 )
               ],
             ),
-          )
+          ),
+
+
+          emojiOn?
+          SizedBox(
+            height: 350,
+            child: EmojiPicker(
+              onEmojiSelected: (Category? category, Emoji? emoji) {
+                // Do something when emoji is tapped (optional)
+              },
+              onBackspacePressed: () {
+                // Do something when the user taps the backspace button (optional)
+              },
+              textEditingController: _messageController, // pass here the same [TextEditingController] that is connected to your input field, usually a [TextFormField]
+              config: Config(
+                columns: 7,
+                //emojiSizeMax: 32 * (foundation.defaultTargetPlatform == TargetPlatform.iOS ? 1.30 : 1.0), // Issue: https://github.com/flutter/flutter/issues/28894
+                verticalSpacing: 0,
+                horizontalSpacing: 0,
+                gridPadding: EdgeInsets.zero,
+                initCategory: Category.RECENT,
+                bgColor: Color(0xFFF2F2F2),
+                indicatorColor: Colors.blue,
+                iconColor: Colors.grey,
+                iconColorSelected: Colors.blue,
+                backspaceColor: Colors.blue,
+                skinToneDialogBgColor: Colors.white,
+                skinToneIndicatorColor: Colors.grey,
+                enableSkinTones: true,
+                showRecentsTab: true,
+                recentsLimit: 28,
+                noRecents: const Text(
+                  'No Recent',
+                  style: TextStyle(fontSize: 20, color: Colors.black26),
+                  textAlign: TextAlign.center,
+                ), // Needs to be const Widget
+                loadingIndicator: const SizedBox.shrink(), // Needs to be const Widget
+                tabIndicatorAnimDuration: kTabScrollDuration,
+                categoryIcons: const CategoryIcons(),
+                buttonMode: ButtonMode.MATERIAL,
+              ),
+            ),
+          ):
+          Container()
+
+
         ],
       ),
     );

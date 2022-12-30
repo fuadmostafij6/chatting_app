@@ -2,6 +2,7 @@ import 'package:chetingapp/screen/chat_screen.dart';
 import 'package:chetingapp/screen/message_Screen.dart';
 import 'package:chetingapp/widget/user_list.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_advanced_drawer/flutter_advanced_drawer.dart';
 import 'package:get/get.dart';
@@ -32,7 +33,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   }
 
-
+  FirebaseAuth _auth = FirebaseAuth.instance;
   @override
   void initState() {
     getUserList();
@@ -346,7 +347,10 @@ class _HomeScreenState extends State<HomeScreen> {
                   itemCount: snapshot.data!.docs.length,
                   itemBuilder: (context,index){
                     QueryDocumentSnapshot documentdata = snapshot.data!.docs[index];
-                    return   Padding(
+                    return
+
+                      _auth.currentUser!.uid !=  documentdata["uid"]?
+                      Padding(
                       padding: const EdgeInsets.only(left: 10,right: 10,top: 10),
                       child: Container(
                         decoration: BoxDecoration(
@@ -374,7 +378,8 @@ class _HomeScreenState extends State<HomeScreen> {
                               fontWeight:FontWeight.bold,
                               color: Colors.black54),),),
                       ),
-                    );
+                    ):
+                      Container();
                   },
                 );
 
