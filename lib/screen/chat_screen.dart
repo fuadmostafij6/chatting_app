@@ -61,7 +61,10 @@ class _ChatScreenState extends State<ChatScreen> {
         receiverUid: widget.userUid,
         senderUid: _senderId,
         message: text,
-        type: "text");
+        type: "text",
+      time: DateTime.now()
+
+    );
 
     addMessage(message!);
     setState(() {});
@@ -118,7 +121,7 @@ class _ChatScreenState extends State<ChatScreen> {
                 .doc(
                   _senderId,
                 )
-                .collection(widget.userUid!)
+                .collection(widget.userUid!).orderBy("time", descending: true)
                 .snapshots(),
             builder: (context, snapshot) {
 

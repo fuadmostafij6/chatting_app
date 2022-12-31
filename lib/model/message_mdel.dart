@@ -8,8 +8,9 @@ class Message {
   String  ?type;
   String ? message;
   String ? photoUrl;
+  DateTime? time;
 
-  Message({this.senderUid, this.receiverUid, this.type, this.message,});
+  Message({this.senderUid, this.receiverUid, this.type, this.message,this.time});
 
   Map<String,dynamic> toMap() {
     var map = Map<String, dynamic>();
@@ -17,6 +18,7 @@ class Message {
     map['receiverUid'] = this.receiverUid;
     map['type'] = this.type;
     map['message'] = this.message;
+    map['time'] = this.time;
     return map;
   }
 
@@ -26,6 +28,7 @@ class Message {
     _message.receiverUid = map['receiverUid'];
     _message.type = map['type'];
     _message.message = map['message'];
+    _message.time = map['time'];
     return _message;
   }
 
