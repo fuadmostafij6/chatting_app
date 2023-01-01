@@ -55,19 +55,25 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   void sendMessage() async {
-    var text = _messageController.text;
-    print("Message text___${text}");
-    message = Message(
-        receiverUid: widget.userUid,
-        senderUid: _senderId,
-        message: text,
-        type: "text",
-      time: DateTime.now()
+    if(_messageController.text.isNotEmpty){
+      var text = _messageController.text;
+      print("Message text___${text}");
+      message = Message(
+          receiverUid: widget.userUid,
+          senderUid: _senderId,
+          message: text,
+          type: "text",
 
-    );
+          time: DateTime.now()
 
-    addMessage(message!);
-    setState(() {});
+      );
+
+      addMessage(message!);
+      setState(() {});
+    }else{
+      print("Please Add your text");
+    }
+
   }
 
   bool emojiOn= false;
@@ -121,7 +127,7 @@ class _ChatScreenState extends State<ChatScreen> {
                 .doc(
                   _senderId,
                 )
-                .collection(widget.userUid!).orderBy("time",descending: true)
+                .collection(widget.userUid!).orderBy("time")
                 .snapshots(),
             builder: (context, snapshot) {
 

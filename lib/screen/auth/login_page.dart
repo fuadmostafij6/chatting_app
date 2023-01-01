@@ -1,4 +1,7 @@
+import 'dart:io';
+
 import 'package:chetingapp/screen/home_screen.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -6,6 +9,7 @@ import 'package:fluttertoast/fluttertoast.dart';
 import 'package:get/get.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../../widget/login_widget.dart';
 
@@ -29,6 +33,27 @@ class _LoginScreenState extends State<LoginScreen>
   TextEditingController namecontrollar = TextEditingController();
   TextEditingController emailcontrollar = TextEditingController();
   TextEditingController passwordcontrollar = TextEditingController();
+
+  File? _fileImage;
+  ImagePicker imagePicker = ImagePicker();
+  String  ?imagePath;
+
+  void takePhoto(ImageSource source) async {
+    final pickedFile =
+        await imagePicker.getImage(source: source, imageQuality: 50);
+    setState(() {
+      _fileImage = File(pickedFile!.path);
+    });
+    Reference reference = FirebaseStorage.instance.ref().child(DateTime.now().toString());
+    await reference.putFile(File(_fileImage!.path));
+    reference.getDownloadURL().then((value) {
+      setState(() {
+        imagePath =value;
+        print("PROFILE Pic Image Path--$imagePath");
+      });
+    });
+
+  }
 
   @override
   void initState() {
@@ -193,10 +218,66 @@ class _LoginScreenState extends State<LoginScreen>
                             fontWeight: FontWeight.bold, fontSize: 20),
                       ),
                       SizedBox(height: 15),
-                      SvgPicture.asset(
-                        "asset/register.svg",
-                        height: 150,
-                        width: 150,
+                      Stack(
+                        alignment: Alignment.bottomRight,
+                        children: [
+                          _fileImage==null ? Container() :    CircleAvatar(
+                            radius: 70,
+                            backgroundColor: Colors.blue,
+                            backgroundImage: FileImage(File(_fileImage!.path)),
+
+                            // backgroundImage: ,
+                          ),
+                          InkWell(
+                            onTap: () {
+                              showDialog(
+                                  context: context,
+                                  builder: (_) {
+                                    return AlertDialog(
+                                      title: Text("Upload Image"),
+                                      content: SingleChildScrollView(
+                                        child: Row(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.center,
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.center,
+                                          children: [
+                                            TextButton(
+                                                onPressed: () {
+                                                  takePhoto(ImageSource.camera);
+                                                  Navigator.pop(context);
+                                                },
+                                                child: Text("Camera")),
+                                            SizedBox(
+                                              width: 20,
+                                            ),
+                                            TextButton(
+                                                onPressed: () {
+                                                  takePhoto(
+                                                      ImageSource.gallery);
+                                                  Navigator.pop(context);
+                                                },
+                                                child: Text("Gallery")),
+                                          ],
+                                        ),
+                                      ),
+                                    );
+                                  });
+                            },
+                            child: Padding(
+                              padding: const EdgeInsets.only(
+                                bottom: 18.0,
+                              ),
+                              child: Icon(
+                                Icons.camera,
+                                size: 35,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      SizedBox(
+                        height: 20,
                       ),
                       TextFildWidged(
                         name: "Name",
@@ -222,7 +303,9 @@ class _LoginScreenState extends State<LoginScreen>
                         ),
                         controller: passwordcontrollar,
                       ),
-                      SizedBox(height: 30,),
+                      SizedBox(
+                        height: 30,
+                      ),
                       InkWell(
                         onTap: () {
                           register();
@@ -232,8 +315,9 @@ class _LoginScreenState extends State<LoginScreen>
                           child: Container(
                             height: 50,
                             decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(50),
-                                color: Color(0XFF6A62B7),),
+                              borderRadius: BorderRadius.circular(50),
+                              color: Color(0XFF6A62B7),
+                            ),
                             child: Padding(
                               padding: const EdgeInsets.all(8.0),
                               child: Center(
@@ -384,7 +468,7 @@ class _LoginScreenState extends State<LoginScreen>
       "name": namecontrollar.text,
       "email": emailcontrollar.text,
       "uid": _auth.currentUser!.uid,
-      "photo": _auth.currentUser!.photoURL,
+      "photo": imagePath ?? "",
       "status": true,
     });
   }

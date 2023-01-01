@@ -54,6 +54,9 @@ dependencies:
   lottie: ^1.2.1
   emoji_picker_flutter: ^1.5.1
   random_string:
+  image_picker: ^0.8.6
+  firebase_storage: ^11.0.10
+  intl: ^0.18.0
 
 
 
