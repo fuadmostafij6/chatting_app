@@ -121,7 +121,7 @@ class _ChatScreenState extends State<ChatScreen> {
                 .doc(
                   _senderId,
                 )
-                .collection(widget.userUid!).orderBy("time", descending: true)
+                .collection(widget.userUid!).orderBy("time",descending: true)
                 .snapshots(),
             builder: (context, snapshot) {
 
@@ -145,7 +145,7 @@ class _ChatScreenState extends State<ChatScreen> {
                       Padding(
                         padding: const EdgeInsets.all(8.0),
                         child: Bubble(
-                          color: Colors.green,
+                          color:documentdata['senderUid'] == _senderId? Colors.green: Colors.deepPurple,
                           child: Text(
                             "${documentdata['message']}",
                             style: TextStyle(fontSize: 18, color: Colors.white),
