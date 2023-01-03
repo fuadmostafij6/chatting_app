@@ -4,6 +4,12 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:emoji_picker_flutter/emoji_picker_flutter.dart';
+import 'package:flutter/scheduler.dart';
+import 'package:get/get.dart';
+import 'package:intl/intl.dart';
+
+import '../call/call_screen.dart';
+
 class ChatScreen extends StatefulWidget {
   final String? userName;
   final String? userEmail;
@@ -55,7 +61,7 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   void sendMessage() async {
-    if(_messageController.text.isNotEmpty){
+    if (_messageController.text.isNotEmpty) {
       var text = _messageController.text;
       print("Message text___${text}");
       message = Message(
@@ -63,20 +69,37 @@ class _ChatScreenState extends State<ChatScreen> {
           senderUid: _senderId,
           message: text,
           type: "text",
-
-          time: DateTime.now()
-
-      );
+          time: DateTime.now());
 
       addMessage(message!);
       setState(() {});
-    }else{
+    } else {
       print("Please Add your text");
     }
-
   }
 
-  bool emojiOn= false;
+  bool emojiOn = false;
+
+  ScrollController _scrollController = ScrollController();
+  String readTimestamp(int timestamp) {
+    var now = new DateTime.now();
+    var format = new DateFormat('HH:mm a');
+    var date = new DateTime.fromMicrosecondsSinceEpoch(timestamp);
+    var diff = date.difference(now);
+    var time = '';
+
+    if (diff.inSeconds <= 0 ||
+        diff.inSeconds > 0 && diff.inMinutes == 0 ||
+        diff.inMinutes > 0 && diff.inHours == 0 ||
+        diff.inHours > 0 && diff.inDays == 0) {
+      time = format.format(date); // Doesn't get called when it should be
+    } else {
+      time =
+          diff.inDays.toString() + 'DAYS AGO'; // Gets call and it's wrong date
+    }
+
+    return time;
+  }
 
   @override
   void initState() {
@@ -92,6 +115,16 @@ class _ChatScreenState extends State<ChatScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        actions: [
+          IconButton(onPressed: (){
+
+            Get.to(CallPage());
+
+          }, icon: Icon(
+            Icons.call,
+            color: Colors.black,
+          ))
+        ],
         leadingWidth: 400,
         centerTitle: true,
         leading: Row(
@@ -121,59 +154,90 @@ class _ChatScreenState extends State<ChatScreen> {
       ),
       body: Column(
         children: [
-          Expanded(child: StreamBuilder(
+          Expanded(
+              child: StreamBuilder(
             stream: FirebaseFirestore.instance
                 .collection('messages')
                 .doc(
                   _senderId,
                 )
-                .collection(widget.userUid!).orderBy("time")
+                .collection(widget.userUid!)
+                .orderBy('time', descending: false)
                 .snapshots(),
             builder: (context, snapshot) {
+              return snapshot.hasData
+                  ? snapshot.data!.docs.isNotEmpty
+                      ? ListView.builder(
+                          shrinkWrap: true,
+                          primary: false,
+                          controller: _scrollController,
+                          // reverse: true,
 
+                          itemCount: snapshot.data!.docs.length,
+                          itemBuilder: (context, index) {
+                            SchedulerBinding.instance.addPostFrameCallback((_) {
+                              if (_scrollController.hasClients) {
+                                _scrollController.jumpTo(
+                                  _scrollController.position.maxScrollExtent,
+                                );
+                              }
+                            });
+                            QueryDocumentSnapshot documentdata =
+                                snapshot.data!.docs[index];
+                            DateTime datFormate = DateTime.parse(
+                                documentdata["time"].toDate().toString());
 
-              return snapshot.hasData?
-              snapshot.data!.docs.isNotEmpty?
-              ListView.builder(
-                shrinkWrap: true,
-                primary: false,
-                reverse: true,
-                itemCount: snapshot.data!.docs.length,
-                itemBuilder: (context, index) {
-                  QueryDocumentSnapshot documentdata =
-                      snapshot.data!.docs[index];
+                            return Align(
+                              alignment: documentdata['senderUid'] == _senderId
+                                  ? Alignment.centerRight
+                                  : Alignment.centerLeft,
+                              child: Padding(
+                                padding: const EdgeInsets.all(8.0),
+                                child: Bubble(
+                                  color: documentdata['senderUid'] == _senderId
+                                      ? Colors.green
+                                      : Colors.deepPurple,
+                                  child: FittedBox(
+                                    child: Column(
+                                      mainAxisAlignment: MainAxisAlignment.end,
+                                      crossAxisAlignment: CrossAxisAlignment.end,
 
-                  return Row(
-                    mainAxisAlignment: documentdata['senderUid'] == _senderId
-                        ? MainAxisAlignment.end
-                        : MainAxisAlignment.start,
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.all(8.0),
-                        child: Bubble(
-                          color:documentdata['senderUid'] == _senderId? Colors.green: Colors.deepPurple,
-                          child: Text(
-                            "${documentdata['message']}",
-                            style: TextStyle(fontSize: 18, color: Colors.white),
-                          ),
-                          radius: Radius.circular(10.0),
-                        ),
-                      ),
-                    ],
-                  );
-                },
-              ):
+                                      children: [
+                                        Text(
+                                          "${documentdata['message']}",
+                                          style: TextStyle(
+                                              fontSize: 18,
+                                              color: Colors.white),
+                                        ),
+                                        Align(
+                                          alignment: Alignment.centerRight,
+                                          child: Text(
+                                            "${DateFormat().add_jm().format(datFormate)}",
+                                            style: TextStyle(
+                                                fontSize: 14,
+                                                color: Colors.white,
 
-                  Center(child: Text("No Massage")):
-
-              Center(child: CircularProgressIndicator());
+                                            ),
+                                            textAlign: TextAlign.end,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  radius: Radius.circular(10.0),
+                                ),
+                              ),
+                            );
+                          },
+                        )
+                      : Center(child: Text("No Massage"))
+                  : Center(child: CircularProgressIndicator());
             },
           )),
           Padding(
             padding: const EdgeInsets.all(18.0),
             child: Row(
               children: [
-
                 InkWell(
                   onTap: () {
                     FocusScope.of(context).unfocus();
@@ -198,7 +262,7 @@ class _ChatScreenState extends State<ChatScreen> {
                 ),
                 Expanded(
                   child: TextField(
-                    onTap: (){
+                    onTap: () {
                       setState(() {
                         emojiOn = false;
                       });
@@ -216,7 +280,7 @@ class _ChatScreenState extends State<ChatScreen> {
                     sendMessage();
 
                     setState(() {
-                      emojiOn =false;
+                      emojiOn = false;
                     });
                   },
                   child: Container(
@@ -234,51 +298,49 @@ class _ChatScreenState extends State<ChatScreen> {
               ],
             ),
           ),
-
-
-          emojiOn?
-          SizedBox(
-            height: 350,
-            child: EmojiPicker(
-              onEmojiSelected: (Category? category, Emoji? emoji) {
-                // Do something when emoji is tapped (optional)
-              },
-              onBackspacePressed: () {
-                // Do something when the user taps the backspace button (optional)
-              },
-              textEditingController: _messageController, // pass here the same [TextEditingController] that is connected to your input field, usually a [TextFormField]
-              config: Config(
-                columns: 7,
-                //emojiSizeMax: 32 * (foundation.defaultTargetPlatform == TargetPlatform.iOS ? 1.30 : 1.0), // Issue: https://github.com/flutter/flutter/issues/28894
-                verticalSpacing: 0,
-                horizontalSpacing: 0,
-                gridPadding: EdgeInsets.zero,
-                initCategory: Category.RECENT,
-                bgColor: Color(0xFFF2F2F2),
-                indicatorColor: Colors.blue,
-                iconColor: Colors.grey,
-                iconColorSelected: Colors.blue,
-                backspaceColor: Colors.blue,
-                skinToneDialogBgColor: Colors.white,
-                skinToneIndicatorColor: Colors.grey,
-                enableSkinTones: true,
-                showRecentsTab: true,
-                recentsLimit: 28,
-                noRecents: const Text(
-                  'No Recent',
-                  style: TextStyle(fontSize: 20, color: Colors.black26),
-                  textAlign: TextAlign.center,
-                ), // Needs to be const Widget
-                loadingIndicator: const SizedBox.shrink(), // Needs to be const Widget
-                tabIndicatorAnimDuration: kTabScrollDuration,
-                categoryIcons: const CategoryIcons(),
-                buttonMode: ButtonMode.MATERIAL,
-              ),
-            ),
-          ):
-          Container()
-
-
+          emojiOn
+              ? SizedBox(
+                  height: 350,
+                  child: EmojiPicker(
+                    onEmojiSelected: (Category? category, Emoji? emoji) {
+                      // Do something when emoji is tapped (optional)
+                    },
+                    onBackspacePressed: () {
+                      // Do something when the user taps the backspace button (optional)
+                    },
+                    textEditingController:
+                        _messageController, // pass here the same [TextEditingController] that is connected to your input field, usually a [TextFormField]
+                    config: Config(
+                      columns: 7,
+                      //emojiSizeMax: 32 * (foundation.defaultTargetPlatform == TargetPlatform.iOS ? 1.30 : 1.0), // Issue: https://github.com/flutter/flutter/issues/28894
+                      verticalSpacing: 0,
+                      horizontalSpacing: 0,
+                      gridPadding: EdgeInsets.zero,
+                      initCategory: Category.RECENT,
+                      bgColor: Color(0xFFF2F2F2),
+                      indicatorColor: Colors.blue,
+                      iconColor: Colors.grey,
+                      iconColorSelected: Colors.blue,
+                      backspaceColor: Colors.blue,
+                      skinToneDialogBgColor: Colors.white,
+                      skinToneIndicatorColor: Colors.grey,
+                      enableSkinTones: true,
+                      showRecentsTab: true,
+                      recentsLimit: 28,
+                      noRecents: const Text(
+                        'No Recent',
+                        style: TextStyle(fontSize: 20, color: Colors.black26),
+                        textAlign: TextAlign.center,
+                      ), // Needs to be const Widget
+                      loadingIndicator:
+                          const SizedBox.shrink(), // Needs to be const Widget
+                      tabIndicatorAnimDuration: kTabScrollDuration,
+                      categoryIcons: const CategoryIcons(),
+                      buttonMode: ButtonMode.MATERIAL,
+                    ),
+                  ),
+                )
+              : Container()
         ],
       ),
     );
