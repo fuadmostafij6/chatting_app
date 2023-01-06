@@ -59,6 +59,8 @@ dependencies:
   intl:
   zego_uikit_prebuilt_call:
   zego_uikit_signaling_plugin: ^1.0.7
+  firebase_messaging: ^14.2.1
+  flutter_local_notifications: ^13.0.0
 
 
 

@@ -2,14 +2,12 @@ import 'package:bubble/bubble.dart';
 import 'package:chetingapp/model/message_mdel.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:emoji_picker_flutter/emoji_picker_flutter.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:fluttertoast/fluttertoast.dart';
-import 'package:get/get.dart';
 import 'package:intl/intl.dart';
-
-import '../call/call_screen.dart';
 import 'package:zego_uikit_prebuilt_call/zego_uikit_prebuilt_call.dart';
 import 'package:zego_uikit_signaling_plugin/zego_uikit_signaling_plugin.dart';
 class ChatScreen extends StatefulWidget {
@@ -32,6 +30,11 @@ class _ChatScreenState extends State<ChatScreen> {
   DocumentSnapshot? documentSnapshot;
   FirebaseAuth? _firebaseAuth = FirebaseAuth.instance;
   String? _senderId;
+
+  FirebaseMessaging  ?_firebaseMessaging;
+
+
+
   final TextEditingController _messageController = TextEditingController();
 
   Future<User?> getUid() async {
@@ -65,6 +68,9 @@ class _ChatScreenState extends State<ChatScreen> {
   void sendMessage() async {
     if (_messageController.text.isNotEmpty) {
       var text = _messageController.text;
+      _firebaseMessaging!.sendMessage(
+
+      );
       print("Message text___${text}");
       message = Message(
           receiverUid: widget.userUid,
@@ -119,6 +125,7 @@ class _ChatScreenState extends State<ChatScreen> {
     return Scaffold(
       appBar: AppBar(
         actions: [
+          callButton(false),
           callButton(true)
           // IconButton(onPressed: (){
           //
