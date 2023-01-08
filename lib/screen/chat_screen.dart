@@ -168,7 +168,7 @@ class _ChatScreenState extends State<ChatScreen> {
         appID: 250260997,
         appSign: "50771182832fc1d646eeeb2efe33f0d8d96377c766c3311970650bdc3b7e9fa2",
         userID: _firebaseAuth!.currentUser!.uid,
-        userName: "user_1",
+        userName: _firebaseAuth!.currentUser!.email!,
         plugins: [ZegoUIKitSignalingPlugin()],
         child: Column(
           children: [
@@ -377,6 +377,7 @@ class _ChatScreenState extends State<ChatScreen> {
             invitees: invitees,
             iconSize: const Size(40, 40),
             buttonSize: const Size(50, 50),
+
             onPressed: (String code, String message, List<String> errorInvitees) {
 
 
@@ -395,11 +396,11 @@ class _ChatScreenState extends State<ChatScreen> {
                   userIDs = userIDs.substring(0, userIDs.length - 1);
                 }
 
-                var message = 'User doesn\'t exist or is offline: $userIDs';
-                if (code.isNotEmpty) {
-                  print("aaa");
-                  message += ', code: $code, message:$message';
-                }
+                var message = 'User is offline';
+                // if (code.isNotEmpty) {
+                //   print("aaa");
+                //   message += ', code: $code, message:$message';
+                // }
                 Fluttertoast.showToast(
                     msg: message,
                     toastLength: Toast.LENGTH_SHORT,
@@ -411,7 +412,7 @@ class _ChatScreenState extends State<ChatScreen> {
                 );
               } else if (code.isNotEmpty) {
                 Fluttertoast.showToast(
-                    msg: "${code} ${message}",
+                    msg: "${message}",
                     toastLength: Toast.LENGTH_SHORT,
                     gravity: ToastGravity.CENTER,
                     timeInSecForIosWeb: 1,
@@ -437,7 +438,7 @@ class _ChatScreenState extends State<ChatScreen> {
 
       invitees.add(ZegoUIKitUser(
         id: inviteeUserID,
-        name: '${widget.userUid}',
+        name: '${widget.userName}',
       ));
     });
 

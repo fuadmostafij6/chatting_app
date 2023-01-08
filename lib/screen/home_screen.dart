@@ -1,3 +1,4 @@
+import 'package:chetingapp/screen/SearchPage.dart';
 import 'package:chetingapp/screen/chat_screen.dart';
 import 'package:chetingapp/screen/message_Screen.dart';
 import 'package:chetingapp/widget/user_list.dart';
@@ -20,6 +21,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
 
   List<String>   userCollectionList = [];
+  List  userCollectionList1 = [];
 
   Future getUserList()async{
     await FirebaseFirestore.instance.collection("user").get().then((value) {
@@ -34,8 +36,20 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   FirebaseAuth _auth = FirebaseAuth.instance;
+
+
+  getUserList1()async{
+
+    QuerySnapshot data = await FirebaseFirestore.instance.collection("user").get();
+
+    userCollectionList1 = data.docs.map((e) => e).toList();
+
+
+  }
+
   @override
   void initState() {
+    getUserList1();
     getUserList();
     super.initState();
   }
@@ -262,6 +276,9 @@ class _HomeScreenState extends State<HomeScreen> {
               child: Container(
                 height: 50,
                 child: TextField(
+                  onTap: (){
+                    showSearch(context: context, delegate: SearchPage());
+                  },
                   controller:_searchControllar,
                   keyboardType: TextInputType.text,
                   decoration: InputDecoration(
