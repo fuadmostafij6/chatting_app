@@ -49,8 +49,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   void initState() {
-    getUserList1();
-    getUserList();
     super.initState();
   }
 
@@ -364,6 +362,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   itemCount: snapshot.data!.docs.length,
                   itemBuilder: (context,index){
                     QueryDocumentSnapshot documentdata = snapshot.data!.docs[index];
+
+
                     return
 
                       _auth.currentUser!.uid !=  documentdata["uid"]?
@@ -391,7 +391,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           title: Text("${documentdata["name"]}",style: TextStyle(fontSize: 14,
                               fontWeight:FontWeight.bold,
                               color: Colors.black54),),
-                          subtitle: Text("hello... ",style: TextStyle(fontSize: 12,
+                          subtitle: Text("",style: TextStyle(fontSize: 12,
                               fontWeight:FontWeight.bold,
                               color: Colors.black54),),),
                       ),

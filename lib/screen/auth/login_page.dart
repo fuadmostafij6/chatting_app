@@ -57,7 +57,7 @@ class _LoginScreenState extends State<LoginScreen>
 
   @override
   void initState() {
-    SystemChrome.setEnabledSystemUIOverlays([]);
+
     super.initState();
 
     animationController =

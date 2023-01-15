@@ -9,10 +9,7 @@ class Globals {
   static init() async {
     documentPath = "${(await getApplicationDocumentsDirectory()).path}/";
   }
-
-  static const double borderRadius = 15;
-  static const double defaultPadding = 8;
   static String documentPath = '';
-  static GlobalKey<AnimatedListState> audioListKey =
-  GlobalKey<AnimatedListState>();
+  static List<String> files = [];
+
 }

@@ -2,27 +2,29 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_vibrate/flutter_vibrate.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:record/record.dart';
 
 import '../Global/global.dart';
+import '../model/message_mdel.dart';
 import 'FlowShader.dart';
 import 'lottieAnimate.dart';
-class AudioState {
-  AudioState._();
-  static List<String> files = [];
-}
+
 
 
 class RecordButton extends StatefulWidget {
   const RecordButton({
     Key? key,
-    required this.controller,
+    required this.controller, required this.userUid,
   }) : super(key: key);
 
   final AnimationController controller;
+  final String userUid;
 
   @override
   State<RecordButton> createState() => _RecordButtonState();
@@ -37,7 +39,10 @@ class _RecordButtonState extends State<RecordButton> {
   late Animation<double> buttonScaleAnimation;
   late Animation<double> timerAnimation;
   late Animation<double> lockerAnimation;
-
+  Map<String, dynamic> map = Map<String, dynamic>();
+  CollectionReference? collectionReference;
+  DocumentSnapshot? documentSnapshot;
+  FirebaseAuth? _firebaseAuth = FirebaseAuth.instance;
   DateTime? startTime;
   Timer? timer;
   String recordDuration = "00:00";
@@ -45,7 +50,60 @@ class _RecordButtonState extends State<RecordButton> {
 
   bool isLocked = false;
   bool showLottie = false;
+  Message? message;
+  void sendMessage(value) async {
 
+
+    message = Message(
+        receiverUid: widget.userUid,
+        senderUid: FirebaseAuth.instance.currentUser!.uid,
+        message: value,
+        type: "audio",
+        time: DateTime.now());
+
+    addMessage(message!);
+    setState(() {});
+
+
+  }
+  void addMessage(Message message) async {
+    map = message.toMap();
+
+    collectionReference = FirebaseFirestore.instance
+        .collection("messages")
+        .doc(message.senderUid)
+        .collection(widget.userUid!);
+
+    collectionReference!.add(map).whenComplete(() {
+      print("Message added to database sender ");
+    });
+
+    collectionReference = FirebaseFirestore.instance
+        .collection("messages")
+        .doc(widget.userUid)
+        .collection(message.senderUid!);
+
+    collectionReference!.add(map).whenComplete(() {
+      print("Message added to database receiver");
+    });
+
+  }
+  void takeVoice(path) async {
+
+
+
+    Reference reference = FirebaseStorage.instance.ref().child(DateTime.now().toString());
+    await reference.putFile(File(path));
+    reference.getDownloadURL().then((value) {
+      sendMessage(value);
+
+      // setState(() {
+      //   imagePath =value;
+      //
+      // });
+    });
+
+  }
   @override
   void initState() {
     super.initState();
@@ -175,15 +233,18 @@ class _RecordButtonState extends State<RecordButton> {
   Widget timerLocked() {
     return Positioned(
       right: 0,
+      bottom: -5,
+
       child: Container(
-        height: size,
+
+        height: 80,
         width: timerWidth,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(30),
           color:  Colors.white,
         ),
         child: Padding(
-          padding: const EdgeInsets.only(left: 15, right: 25),
+          padding: const EdgeInsets.only(left: 25, right: 25),
           child: GestureDetector(
             behavior: HitTestBehavior.opaque,
             onTap: () async {
@@ -194,10 +255,10 @@ class _RecordButtonState extends State<RecordButton> {
               recordDuration = "00:00";
 
               var filePath = await Record().stop();
-              AudioState.files.add(filePath!);
-              // Globals.audioListKey.currentState!
-              //     .insertItem(AudioState.files.length - 1);
-              // debugPrint(filePath);
+
+              print(filePath);
+              takeVoice(filePath);
+              Globals.files.add(filePath!);
               setState(() {
                 isLocked = false;
               });
@@ -237,9 +298,9 @@ class _RecordButtonState extends State<RecordButton> {
           clipBehavior: Clip.hardEdge,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: Theme.of(context).primaryColor,
+            color: Colors.deepPurple,
           ),
-          child: const Icon(Icons.mic,),
+          child: const Icon(Icons.mic,color: Colors.white,),
         ),
       ),
       onLongPressDown: (_) {
@@ -290,8 +351,8 @@ class _RecordButtonState extends State<RecordButton> {
           recordDuration = "00:00";
 
           var filePath = await Record().stop();
-          AudioState.files.add(filePath!);
-          debugPrint(filePath);
+          // Globals.files.add(filePath!);
+          // debugPrint(filePath);
         }
       },
       onLongPressCancel: () {

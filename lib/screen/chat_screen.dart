@@ -1,4 +1,7 @@
-import 'package:bubble/bubble.dart';
+
+import 'package:audioplayers/audioplayers.dart';
+import 'package:chat_bubbles/bubbles/bubble_normal.dart';
+import 'package:chat_bubbles/bubbles/bubble_normal_audio.dart';
 import 'package:chetingapp/model/message_mdel.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -8,8 +11,12 @@ import 'package:emoji_picker_flutter/emoji_picker_flutter.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:intl/intl.dart';
-import 'package:zego_uikit_prebuilt_call/zego_uikit_prebuilt_call.dart';
+
+
 import 'package:zego_uikit_signaling_plugin/zego_uikit_signaling_plugin.dart';
+import 'package:zego_uikit_prebuilt_call/zego_uikit_prebuilt_call.dart';
+
+import '../widget/RecordBUtton.dart';
 class ChatScreen extends StatefulWidget {
   final String? userName;
   final String? userEmail;
@@ -23,14 +30,14 @@ class ChatScreen extends StatefulWidget {
   State<ChatScreen> createState() => _ChatScreenState();
 }
 
-class _ChatScreenState extends State<ChatScreen> {
+class _ChatScreenState extends State<ChatScreen> with SingleTickerProviderStateMixin {
   Message? message;
   Map<String, dynamic> map = Map<String, dynamic>();
   CollectionReference? collectionReference;
   DocumentSnapshot? documentSnapshot;
   FirebaseAuth? _firebaseAuth = FirebaseAuth.instance;
   String? _senderId;
-
+AnimationController? controller;
   FirebaseMessaging  ?_firebaseMessaging;
 
 
@@ -68,9 +75,9 @@ class _ChatScreenState extends State<ChatScreen> {
   void sendMessage() async {
     if (_messageController.text.isNotEmpty) {
       var text = _messageController.text;
-      _firebaseMessaging!.sendMessage(
-
-      );
+      // _firebaseMessaging!.sendMessage(
+      //
+      // );
       print("Message text___${text}");
       message = Message(
           receiverUid: widget.userUid,
@@ -87,7 +94,7 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   bool emojiOn = false;
-
+String micOn ="";
   ScrollController _scrollController = ScrollController();
   String readTimestamp(int timestamp) {
     var now = new DateTime.now();
@@ -117,6 +124,10 @@ class _ChatScreenState extends State<ChatScreen> {
         _senderId = value!.uid;
       });
     });
+    controller = AnimationController(vsync: this,
+    duration: Duration(milliseconds: 600),
+
+    );
     super.initState();
   }
 
@@ -183,6 +194,8 @@ class _ChatScreenState extends State<ChatScreen> {
                   .orderBy('time', descending: false)
                   .snapshots(),
               builder: (context, snapshot) {
+
+
                 return snapshot.hasData
                     ? snapshot.data!.docs.isNotEmpty
                         ? ListView.builder(
@@ -204,45 +217,130 @@ class _ChatScreenState extends State<ChatScreen> {
                                   snapshot.data!.docs[index];
                               DateTime datFormate = DateTime.parse(
                                   documentdata["time"].toDate().toString());
+                              Duration duration = new Duration();
+                              Duration position = new Duration();
+                              bool isPlaying = false;
+                              bool isLoading = false;
+                              bool isPause = false;
+                              AudioPlayer audioPlayer = new AudioPlayer();
+                              void _changeSeek(double value) {
+                                setState(() {
+                                  audioPlayer.seek(new Duration(seconds: value.toInt()));
+                                });
+                              }
 
+                               _playAudio(String u) async {
+                                print("uuuuu"+u);
+                                final url =
+                                    u;
+                                if (isPause) {
+                                  await audioPlayer.resume();
+                                  setState(() {
+                                    isPlaying = true;
+                                    isPause = false;
+                                  });
+                                } else if (isPlaying) {
+                                  await audioPlayer.pause();
+                                  setState(() {
+                                    isPlaying = false;
+                                    isPause = true;
+                                  });
+                                } else {
+                                  setState(() {
+                                    isLoading = true;
+                                  });
+                                  await audioPlayer.play(UrlSource(url));
+                                  setState(() {
+                                    isPlaying = true;
+                                  });
+                                }
+
+                                audioPlayer.onDurationChanged.listen((Duration d) {
+                                  setState(() {
+                                    duration = d;
+                                    isLoading = false;
+                                  });
+                                });
+                                audioPlayer.onDurationChanged.listen((Duration p) {
+                                  setState(() {
+                                    position = p;
+                                  });
+                                });
+                                audioPlayer.onPlayerComplete.listen((event) {
+                                  setState(() {
+                                    isPlaying = false;
+                                    duration = new Duration();
+                                    position = new Duration();
+                                  });
+                                });
+                              }
                               return Align(
                                 alignment: documentdata['senderUid'] == _senderId
                                     ? Alignment.centerRight
                                     : Alignment.centerLeft,
                                 child: Padding(
                                   padding: const EdgeInsets.all(8.0),
-                                  child: Bubble(
-                                    color: documentdata['senderUid'] == _senderId
+                                  child:
+                                  documentdata['type'] =="text"?
+                                  BubbleNormal(
+                                    text: documentdata['message'],
+                                    isSender: documentdata['senderUid'] == _senderId,
+                                    color:documentdata['senderUid'] == _senderId
                                         ? Colors.green
                                         : Colors.deepPurple,
-                                    child: FittedBox(
-                                      child: Column(
-                                        mainAxisAlignment: MainAxisAlignment.end,
-                                        crossAxisAlignment: CrossAxisAlignment.end,
-
-                                        children: [
-                                          Text(
-                                            "${documentdata['message']}",
-                                            style: TextStyle(
-                                                fontSize: 18,
-                                                color: Colors.white),
-                                          ),
-                                          Align(
-                                            alignment: Alignment.centerRight,
-                                            child: Text(
-                                              "${DateFormat().add_jm().format(datFormate)}",
-                                              style: TextStyle(
-                                                  fontSize: 14,
-                                                  color: Colors.white,
-
-                                              ),
-                                              textAlign: TextAlign.end,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
+                                    tail: true,
+                                    textStyle: TextStyle(
+                                      fontSize: 20,
+                                      color: Colors.white,
                                     ),
-                                    radius: Radius.circular(10.0),
+                                  )
+
+                                  // Bubble(
+                                  //   color: documentdata['senderUid'] == _senderId
+                                  //       ? Colors.green
+                                  //       : Colors.deepPurple,
+                                  //   child: FittedBox(
+                                  //     child: Column(
+                                  //       mainAxisAlignment: MainAxisAlignment.end,
+                                  //       crossAxisAlignment: CrossAxisAlignment.end,
+                                  //
+                                  //       children: [
+                                  //         Text(
+                                  //           "${documentdata['message']}",
+                                  //           style: TextStyle(
+                                  //               fontSize: 18,
+                                  //               color: Colors.white),
+                                  //         ),
+                                  //         Align(
+                                  //           alignment: Alignment.centerRight,
+                                  //           child: Text(
+                                  //             "${DateFormat().add_jm().format(datFormate)}",
+                                  //             style: TextStyle(
+                                  //               fontSize: 14,
+                                  //               color: Colors.white,
+                                  //
+                                  //             ),
+                                  //             textAlign: TextAlign.end,
+                                  //           ),
+                                  //         ),
+                                  //       ],
+                                  //     ),
+                                  //   ),
+                                  //   radius: Radius.circular(10.0),
+                                  // )
+                                 : BubbleNormalAudio(
+                                    color: Color(0xFFE8E8EE),
+                                    duration: duration.inSeconds.toDouble(),
+                                    position: position.inSeconds.toDouble(),
+                                    isPlaying: isPlaying,
+                                    isLoading: isLoading,
+                                    isPause: isPause,
+                                    onSeekChanged: _changeSeek,
+                                    onPlayPauseButtonClick: ()async{
+                                      print(documentdata['message']);
+                                     await _playAudio(documentdata['message']);
+                                    },
+                                    sent: documentdata['senderUid'] == _senderId,
                                   ),
                                 ),
                               );
@@ -278,7 +376,8 @@ class _ChatScreenState extends State<ChatScreen> {
                   SizedBox(
                     width: 5,
                   ),
-                  Expanded(
+
+                Expanded(
                     child: TextField(
                       onTap: () {
                         setState(() {
@@ -286,6 +385,11 @@ class _ChatScreenState extends State<ChatScreen> {
                         });
                       },
                       controller: _messageController,
+                      onChanged: (v){
+                        setState(() {
+                          micOn = v;
+                        });
+                      },
                       decoration: InputDecoration(
                           hintText: "Send message", border: OutlineInputBorder()),
                     ),
@@ -293,7 +397,7 @@ class _ChatScreenState extends State<ChatScreen> {
                   SizedBox(
                     width: 5,
                   ),
-                  InkWell(
+                  micOn.isNotEmpty?   InkWell(
                     onTap: () {
                       sendMessage();
 
@@ -312,7 +416,11 @@ class _ChatScreenState extends State<ChatScreen> {
                         color: Colors.white,
                       ),
                     ),
-                  )
+                  ):
+
+                  RecordButton(controller: controller!, userUid: widget.userUid!,),
+
+
                 ],
               ),
             ),
@@ -372,9 +480,9 @@ class _ChatScreenState extends State<ChatScreen> {
         var invitees = getInvitesFromTextCtrl(inviteeUsersIDTextCtrl.text);
 
         return
-          ZegoStartCallInvitationButton(
-            isVideoCall: isVideoCall,
-            invitees: invitees,
+          ZegoSendCallInvitationButton(
+
+            invitees:invitees ,
             iconSize: const Size(40, 40),
             buttonSize: const Size(50, 50),
 
@@ -421,7 +529,7 @@ class _ChatScreenState extends State<ChatScreen> {
                     fontSize: 16.0
                 );
               }
-            },
+            }, isVideoCall: isVideoCall,
           );
       },
     );
